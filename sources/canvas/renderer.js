@@ -18,6 +18,19 @@ import {
 } from "./preview-animation.js";
 import { getSortedLayersByAnim } from "../state/meta.js";
 
+/**
+ * Mithril UI only: in embedded composers (e.g. Deckspire) `m` is not loaded.
+ */
+function mithrilRedrawIfPresent() {
+  if (
+    typeof window !== "undefined" &&
+    window.m &&
+    typeof window.m.redraw === "function"
+  ) {
+    window.m.redraw();
+  }
+}
+
 export const SHEET_HEIGHT = 3456; // Full universal sheet height
 export const SHEET_WIDTH = 832; // 13 frames * 64px
 
@@ -72,7 +85,7 @@ export async function renderCharacter(
   // Import state to access custom uploaded image
   const appState = await import("../state/state.js").then(m => m.state);
   appState.renderCharacter.isRendering = true;
-  m.redraw();
+  mithrilRedrawIfPresent();
 
   try {
     // Use provided canvas or default to main canvas
@@ -378,7 +391,7 @@ export async function renderCharacter(
     }
   } finally {
     appState.renderCharacter.isRendering = false;
-    m.redraw();
+    mithrilRedrawIfPresent();
 
     // Mark end and measure
     if (profiler) {

@@ -3,40 +3,56 @@ let imagesToLoad = 0;
 let imagesLoaded = 0;
 
 /**
+ * Resolve absolute URL in embedded contexts (Deckspire).
+ * If `window.__DECKSPIRE_LPC_BASE__` exists, prefix relative `spritesheets/...` paths.
+ */
+function resolveImageUrl(src) {
+  if (!src) return src;
+  if (/^https?:\/\//i.test(src)) return src;
+  if (typeof window === "undefined") return src;
+  const base = window.__DECKSPIRE_LPC_BASE__;
+  if (!base || typeof base !== "string") return src;
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  const path = src.replace(/^\/+/, "");
+  return `${normalizedBase}${path}`;
+}
+
+/**
  * Load an image
  */
 export function loadImage(src) {
+  const url = resolveImageUrl(src);
   return new Promise((resolve, reject) => {
-    if (loadedImages[src]) {
-      resolve(loadedImages[src]);
+    if (loadedImages[url]) {
+      resolve(loadedImages[url]);
       return;
     }
 
     // Mark start of image load for profiling
     const profiler = window.profiler;
     if (profiler) {
-      profiler.mark(`image-load:${src}:start`);
+      profiler.mark(`image-load:${url}:start`);
     }
 
     const img = new Image();
     img.onload = () => {
-      loadedImages[src] = img;
+      loadedImages[url] = img;
       imagesLoaded++;
 
       // Mark end and measure
       if (profiler) {
-        profiler.mark(`image-load:${src}:end`);
-        profiler.measure(`image-load:${src}`, `image-load:${src}:start`, `image-load:${src}:end`);
+        profiler.mark(`image-load:${url}:end`);
+        profiler.measure(`image-load:${url}`, `image-load:${url}:start`, `image-load:${url}:end`);
       }
 
       resolve(img);
     };
     img.onerror = () => {
-      console.error(`Failed to load image: ${src}`);
+      console.error(`Failed to load image: ${url}`);
       imagesLoaded++;
-      reject(new Error(`Failed to load ${src}`));
+      reject(new Error(`Failed to load ${url}`));
     };
-    img.src = src;
+    img.src = url;
     imagesToLoad++;
   });
 }
